@@ -15,14 +15,18 @@ export async function refreshAll(fetchToken) {
       continue;
     }
     if (Date.now() - session.savedAt > TTL_MS - 60_000) {
-      const token = await fetchToken(session.refreshToken);
-      saveSession(id, { ...session, token });
+      try {
+        const token = await fetchToken(session.refreshToken);
+        if (token) saveSession(id, { ...session, token });
+      } catch (err) {
+        console.error("refresh failed", id, err);
+      }
     }
   }
 }
 
 export function startRefreshLoop(fetchToken) {
-  timer = setInterval(() => refreshAll(fetchToken), 30_000);
+  timer = setInterval(() => refreshAll(fetchToken).catch(console.error), 30_000);
 }
 
 export function stopRefreshLoop() {
